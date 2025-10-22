@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World Infinite Scroll</title>
+    <title>Interactive Hello World</title>
     <style>
         * {
             margin: 0;
@@ -12,177 +12,342 @@
         }
 
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #111;
-            color: #fff;
-            height: 100vh;
+            font-family: 'Arial', sans-serif;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .viewport {
-            position: relative;
             width: 100vw;
             height: 100vh;
-            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        .slides {
-            height: 100%;
+        .container {
             width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
+            overflow-y: scroll;
             scroll-snap-type: y mandatory;
-            overflow-y: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
             scroll-behavior: smooth;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
         }
 
-        .slides::-webkit-scrollbar {
-            display: none;
+        .container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
 
         .slide {
-            flex: 0 0 100vh;
-            width: 100%;
+            width: 100vw;
+            min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             scroll-snap-align: start;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+            position: relative;
         }
 
-        .slide h1 {
-            font-size: clamp(5rem, 18vw, 12rem);
-            font-weight: 700;
-            line-height: 0.9;
+        .letter {
+            font-size: 30vmin;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .space {
+            font-size: 30vmin;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: white;
+            transform: scale(1.3);
+        }
+
+        .instruction {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 18px;
             text-align: center;
+            opacity: 0.8;
+            z-index: 1000;
         }
 
-        .fade-overlay {
-            pointer-events: none;
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(17, 17, 17, 0.85) 0%, rgba(17, 17, 17, 0) 35%, rgba(17, 17, 17, 0) 65%, rgba(17, 17, 17, 0.85) 100%);
+        @media (max-width: 768px) {
+            .letter {
+                font-size: 35vmin;
+            }
+
+            .instruction {
+                font-size: 14px;
+                top: 20px;
+            }
+        }
+
+        /* Arrow indicators */
+        .arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 40px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .arrow:hover {
+            color: white;
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        .arrow-left {
+            left: 20px;
+        }
+
+        .arrow-right {
+            right: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="viewport">
-        <div class="slides" id="slides">
-            <section class="slide"><h1>Hello World</h1></section>
-            <section class="slide"><h1>Hello World</h1></section>
-            <section class="slide"><h1>Hello World</h1></section>
-        </div>
-        <div class="fade-overlay"></div>
+    <div class="instruction">
+        Swipe or use arrow keys to navigate ↓
+    </div>
+
+    <div class="arrow arrow-left" id="arrowUp" style="top: 20px; left: 50%; transform: translateX(-50%) rotate(90deg);">‹</div>
+    <div class="arrow arrow-right" id="arrowDown" style="bottom: 20px; top: auto; left: 50%; transform: translateX(-50%) rotate(90deg);">›</div>
+
+    <div class="container" id="container">
+        <!-- Slides will be generated by JavaScript -->
+    </div>
+
+    <div class="navigation" id="navigation">
+        <!-- Dots will be generated by JavaScript -->
     </div>
 
     <script>
-        const slidesContainer = document.getElementById('slides');
-        const originalSlideCount = 3;
-        let isUserInteracting = false;
-        let currentIndex = 1; // Start at the first real slide (after the clone)
-        const scrollDuration = 3200;
-        let intervalId;
+        const text = "HELLO WORLD";
+        const container = document.getElementById('container');
+        const navigation = document.getElementById('navigation');
+        const arrowUp = document.getElementById('arrowUp');
+        const arrowDown = document.getElementById('arrowDown');
 
-        // Clone slides for infinite effect: add one clone at the beginning and one at the end
-        const firstSlide = slidesContainer.children[0].cloneNode(true);
-        const lastSlide = slidesContainer.children[originalSlideCount - 1].cloneNode(true);
-        
-        slidesContainer.appendChild(firstSlide);
-        slidesContainer.insertBefore(lastSlide, slidesContainer.children[0]);
+        const letters = text.split('');
+        const textLength = letters.length;
+        let isScrolling = false;
+        let scrollTimeout;
 
-        const totalSlides = slidesContainer.children.length;
+        // Create 3 sets of slides for infinite scrolling (before, current, after)
+        function createSlides() {
+            // Create 3 full sets
+            for (let set = 0; set < 3; set++) {
+                letters.forEach((char, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = 'slide';
+                    slide.setAttribute('data-set', set);
+                    slide.setAttribute('data-index', index);
 
-        function scrollToIndex(index, smooth = true) {
-            const top = index * window.innerHeight;
-            slidesContainer.scrollTo({ 
-                top, 
-                behavior: smooth ? 'smooth' : 'auto' 
+                    const letter = document.createElement('div');
+                    letter.className = char === ' ' ? 'space' : 'letter';
+                    letter.textContent = char === ' ' ? '␣' : char;
+
+                    slide.appendChild(letter);
+                    container.appendChild(slide);
+                });
+            }
+        }
+
+        createSlides();
+
+        // Create navigation dots (only for one set)
+        letters.forEach((char, index) => {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            if (index === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => {
+                scrollToIndex(index);
+            });
+            navigation.appendChild(dot);
+        });
+
+        // Initialize: scroll to the middle set, first letter
+        function initialize() {
+            const slideHeight = window.innerHeight;
+            const middleSetStart = textLength * slideHeight;
+            container.scrollTo({
+                top: middleSetStart,
+                behavior: 'auto'
             });
         }
 
-        function handleInfiniteScroll() {
-            const scrollTop = slidesContainer.scrollTop;
+        setTimeout(initialize, 100);
+
+        // Get current index (0 to textLength-1)
+        function getCurrentIndex() {
+            const scrollPosition = container.scrollTop;
             const slideHeight = window.innerHeight;
-            const currentScrollIndex = Math.round(scrollTop / slideHeight);
-
-            // If we're at the cloned first slide (at the end), jump to the real first slide
-            if (currentScrollIndex >= totalSlides - 1) {
-                currentIndex = 1;
-                setTimeout(() => {
-                    scrollToIndex(currentIndex, false);
-                }, 50);
-            }
-            // If we're at the cloned last slide (at the beginning), jump to the real last slide
-            else if (currentScrollIndex <= 0) {
-                currentIndex = totalSlides - 2;
-                setTimeout(() => {
-                    scrollToIndex(currentIndex, false);
-                }, 50);
-            } else {
-                currentIndex = currentScrollIndex;
-            }
+            const totalIndex = Math.round(scrollPosition / slideHeight);
+            return totalIndex % textLength;
         }
 
-        function startAutoScroll() {
-            return setInterval(() => {
-                if (isUserInteracting) return;
-                currentIndex++;
-                scrollToIndex(currentIndex);
-            }, scrollDuration);
+        // Scroll to a specific letter index
+        function scrollToIndex(index, behavior = 'smooth') {
+            const slideHeight = window.innerHeight;
+            const currentScrollPos = container.scrollTop;
+            const currentTotalIndex = Math.round(currentScrollPos / slideHeight);
+            const currentSet = Math.floor(currentTotalIndex / textLength);
+
+            // Scroll to the same index in the current set
+            const targetScrollPos = (currentSet * textLength + index) * slideHeight;
+
+            container.scrollTo({
+                top: targetScrollPos,
+                behavior: behavior
+            });
         }
 
-        // Initialize position
-        scrollToIndex(currentIndex, false);
+        // Handle infinite scroll loop
+        function handleInfiniteScroll() {
+            const scrollPosition = container.scrollTop;
+            const slideHeight = window.innerHeight;
+            const totalIndex = Math.round(scrollPosition / slideHeight);
+            const currentSet = Math.floor(totalIndex / textLength);
+            const currentIndex = totalIndex % textLength;
 
-        // Start auto-scroll
-        intervalId = startAutoScroll();
+            // If we're in the first set (set 0), jump to set 1
+            if (currentSet === 0) {
+                const newScrollPos = (textLength + currentIndex) * slideHeight;
+                container.scrollTo({
+                    top: newScrollPos,
+                    behavior: 'auto'
+                });
+            }
+            // If we're in the last set (set 2), jump to set 1
+            else if (currentSet === 2) {
+                const newScrollPos = (textLength + currentIndex) * slideHeight;
+                container.scrollTo({
+                    top: newScrollPos,
+                    behavior: 'auto'
+                });
+            }
 
-        // Handle scroll end to check for infinite loop
-        let scrollTimeout;
-        slidesContainer.addEventListener('scroll', () => {
+            // Update navigation dots
+            document.querySelectorAll('.dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentIndex);
+            });
+        }
+
+        // Scroll event listener
+        container.addEventListener('scroll', () => {
             clearTimeout(scrollTimeout);
+
             scrollTimeout = setTimeout(() => {
                 handleInfiniteScroll();
             }, 150);
         });
 
-        // User interaction handlers
-        ['mousedown', 'touchstart', 'wheel'].forEach(eventName => {
-            slidesContainer.addEventListener(eventName, () => {
-                isUserInteracting = true;
-                clearInterval(intervalId);
-            }, { passive: true });
+        // Arrow navigation
+        arrowUp.addEventListener('click', () => {
+            const currentIndex = getCurrentIndex();
+            const prevIndex = (currentIndex - 1 + textLength) % textLength;
+            scrollToIndex(prevIndex);
         });
 
-        ['mouseup', 'touchend'].forEach(eventName => {
-            slidesContainer.addEventListener(eventName, () => {
-                setTimeout(() => {
-                    isUserInteracting = false;
-                    intervalId = startAutoScroll();
-                }, 500);
-            });
+        arrowDown.addEventListener('click', () => {
+            const currentIndex = getCurrentIndex();
+            const nextIndex = (currentIndex + 1) % textLength;
+            scrollToIndex(nextIndex);
         });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                const currentIndex = getCurrentIndex();
+                const nextIndex = (currentIndex + 1) % textLength;
+                scrollToIndex(nextIndex);
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const currentIndex = getCurrentIndex();
+                const prevIndex = (currentIndex - 1 + textLength) % textLength;
+                scrollToIndex(prevIndex);
+            }
+        });
+
+        // Touch swipe support for mobile
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        container.addEventListener('touchstart', (e) => {
+            touchStartY = e.changedTouches[0].screenY;
+        });
+
+        container.addEventListener('touchend', (e) => {
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const currentIndex = getCurrentIndex();
+
+            if (touchStartY - touchEndY > swipeThreshold) {
+                // Swipe up (next letter)
+                const nextIndex = (currentIndex + 1) % textLength;
+                scrollToIndex(nextIndex);
+            } else if (touchEndY - touchStartY > swipeThreshold) {
+                // Swipe down (previous letter)
+                const prevIndex = (currentIndex - 1 + textLength) % textLength;
+                scrollToIndex(prevIndex);
+            }
+        }
 
         // Handle window resize
         window.addEventListener('resize', () => {
-            scrollToIndex(currentIndex, false);
-        });
-
-        // Handle visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                clearInterval(intervalId);
-            } else if (!isUserInteracting) {
-                intervalId = startAutoScroll();
-            }
+            const currentIndex = getCurrentIndex();
+            const slideHeight = window.innerHeight;
+            const middleSetStart = textLength * slideHeight;
+            container.scrollTo({
+                top: middleSetStart + currentIndex * slideHeight,
+                behavior: 'auto'
+            });
         });
     </script>
 </body>
 </html>
-
