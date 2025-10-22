@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Hello World</title>
+    <title>Hello World Vertical Scroll</title>
     <style>
         * {
             margin: 0;
@@ -12,288 +12,121 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            height: 100vh;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .viewport {
+            position: relative;
             width: 100vw;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
         }
 
-        .container {
-            width: 100%;
+        .slides {
             height: 100%;
+            width: 100%;
             display: flex;
-            overflow-x: scroll;
-            overflow-y: hidden;
-            scroll-snap-type: x mandatory;
+            flex-direction: column;
+            scroll-snap-type: y mandatory;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             scroll-behavior: smooth;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
         }
 
-        .container::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+        .slides::-webkit-scrollbar {
+            display: none;
         }
 
         .slide {
-            min-width: 100vw;
-            height: 100vh;
+            flex: 0 0 100vh;
+            width: 100%;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             scroll-snap-align: start;
-            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
-        .letter {
-            font-size: 30vmin;
-            font-weight: bold;
-            color: white;
-            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        .space {
-            font-size: 30vmin;
-            font-weight: bold;
-            color: rgba(255, 255, 255, 0.3);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .navigation {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 1000;
-        }
-
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .dot.active {
-            background: white;
-            transform: scale(1.3);
-        }
-
-        .instruction {
-            position: fixed;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 18px;
+        .slide h1 {
+            font-size: clamp(5rem, 18vw, 12rem);
+            font-weight: 700;
+            line-height: 0.9;
             text-align: center;
-            opacity: 0.8;
-            z-index: 1000;
         }
 
-        @media (max-width: 768px) {
-            .letter {
-                font-size: 35vmin;
-            }
-
-            .instruction {
-                font-size: 14px;
-                top: 20px;
-            }
-        }
-
-        /* Arrow indicators */
-        .arrow {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 40px;
-            color: rgba(255, 255, 255, 0.6);
-            cursor: pointer;
-            z-index: 1000;
-            transition: all 0.3s ease;
-            user-select: none;
-        }
-
-        .arrow:hover {
-            color: white;
-            transform: translateY(-50%) scale(1.2);
-        }
-
-        .arrow-left {
-            left: 20px;
-        }
-
-        .arrow-right {
-            right: 20px;
+        .fade-overlay {
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(17, 17, 17, 0.85) 0%, rgba(17, 17, 17, 0) 35%, rgba(17, 17, 17, 0) 65%, rgba(17, 17, 17, 0.85) 100%);
         }
     </style>
 </head>
 <body>
-    <div class="instruction">
-        Swipe or use arrow keys to navigate →
-    </div>
-
-    <div class="arrow arrow-left" id="arrowLeft">‹</div>
-    <div class="arrow arrow-right" id="arrowRight">›</div>
-
-    <div class="container" id="container">
-        <!-- Slides will be generated by JavaScript -->
-    </div>
-
-    <div class="navigation" id="navigation">
-        <!-- Dots will be generated by JavaScript -->
+    <div class="viewport">
+        <div class="slides" id="slides">
+            <section class="slide"><h1>Hello World</h1></section>
+            <section class="slide"><h1>Hello World</h1></section>
+            <section class="slide"><h1>Hello World</h1></section>
+        </div>
+        <div class="fade-overlay"></div>
     </div>
 
     <script>
-        const text = "HELLO WORLD";
-        const container = document.getElementById('container');
-        const navigation = document.getElementById('navigation');
-        const arrowLeft = document.getElementById('arrowLeft');
-        const arrowRight = document.getElementById('arrowRight');
+        const slidesContainer = document.getElementById('slides');
+        const slideCount = slidesContainer.children.length;
+        let currentIndex = 0;
+        let isUserInteracting = false;
+        const scrollDuration = 3200;
 
-        // Create slides for each character
-        text.split('').forEach((char, index) => {
-            const slide = document.createElement('div');
-            slide.className = 'slide';
-
-            const letter = document.createElement('div');
-            letter.className = char === ' ' ? 'space' : 'letter';
-            letter.textContent = char === ' ' ? '␣' : char;
-
-            slide.appendChild(letter);
-            container.appendChild(slide);
-
-            // Create navigation dot
-            const dot = document.createElement('div');
-            dot.className = 'dot';
-            if (index === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => {
-                container.scrollTo({
-                    left: index * window.innerWidth,
-                    behavior: 'smooth'
-                });
-            });
-            navigation.appendChild(dot);
-        });
-
-        // Update active dot on scroll
-        container.addEventListener('scroll', () => {
-            const scrollPosition = container.scrollLeft;
-            const slideWidth = window.innerWidth;
-            const currentIndex = Math.round(scrollPosition / slideWidth);
-
-            document.querySelectorAll('.dot').forEach((dot, index) => {
-                dot.classList.toggle('active', index === currentIndex);
-            });
-
-            // Update arrow visibility
-            arrowLeft.style.opacity = currentIndex === 0 ? '0.3' : '0.6';
-            arrowRight.style.opacity = currentIndex === text.length - 1 ? '0.3' : '0.6';
-        });
-
-        // Arrow navigation
-        arrowLeft.addEventListener('click', () => {
-            const scrollPosition = container.scrollLeft;
-            const slideWidth = window.innerWidth;
-            const currentIndex = Math.round(scrollPosition / slideWidth);
-            if (currentIndex > 0) {
-                container.scrollTo({
-                    left: (currentIndex - 1) * slideWidth,
-                    behavior: 'smooth'
-                });
-            }
-        });
-
-        arrowRight.addEventListener('click', () => {
-            const scrollPosition = container.scrollLeft;
-            const slideWidth = window.innerWidth;
-            const currentIndex = Math.round(scrollPosition / slideWidth);
-            if (currentIndex < text.length - 1) {
-                container.scrollTo({
-                    left: (currentIndex + 1) * slideWidth,
-                    behavior: 'smooth'
-                });
-            }
-        });
-
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            const scrollPosition = container.scrollLeft;
-            const slideWidth = window.innerWidth;
-            const currentIndex = Math.round(scrollPosition / slideWidth);
-
-            if (e.key === 'ArrowRight' && currentIndex < text.length - 1) {
-                container.scrollTo({
-                    left: (currentIndex + 1) * slideWidth,
-                    behavior: 'smooth'
-                });
-            } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
-                container.scrollTo({
-                    left: (currentIndex - 1) * slideWidth,
-                    behavior: 'smooth'
-                });
-            }
-        });
-
-        // Touch swipe support for mobile
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        container.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-
-        container.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        });
-
-        function handleSwipe() {
-            const swipeThreshold = 50;
-            const scrollPosition = container.scrollLeft;
-            const slideWidth = window.innerWidth;
-            const currentIndex = Math.round(scrollPosition / slideWidth);
-
-            if (touchStartX - touchEndX > swipeThreshold && currentIndex < text.length - 1) {
-                // Swipe left
-                container.scrollTo({
-                    left: (currentIndex + 1) * slideWidth,
-                    behavior: 'smooth'
-                });
-            } else if (touchEndX - touchStartX > swipeThreshold && currentIndex > 0) {
-                // Swipe right
-                container.scrollTo({
-                    left: (currentIndex - 1) * slideWidth,
-                    behavior: 'smooth'
-                });
-            }
+        function scrollToIndex(index) {
+            const top = index * window.innerHeight;
+            slidesContainer.scrollTo({ top, behavior: 'smooth' });
         }
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            const scrollPosition = container.scrollLeft;
-            const slideWidth = window.innerWidth;
-            const currentIndex = Math.round(scrollPosition / slideWidth);
-            container.scrollTo({
-                left: currentIndex * window.innerWidth,
-                behavior: 'auto'
+        function startAutoScroll() {
+            return setInterval(() => {
+                if (isUserInteracting) return;
+                currentIndex = (currentIndex + 1) % slideCount;
+                scrollToIndex(currentIndex);
+            }, scrollDuration);
+        }
+
+        let intervalId = startAutoScroll();
+
+        ['mousedown', 'touchstart', 'wheel'].forEach(eventName => {
+            slidesContainer.addEventListener(eventName, () => {
+                isUserInteracting = true;
+                clearInterval(intervalId);
+            }, { passive: true });
+        });
+
+        ['mouseup', 'touchend'].forEach(eventName => {
+            slidesContainer.addEventListener(eventName, () => {
+                isUserInteracting = false;
+                intervalId = startAutoScroll();
             });
+        });
+
+        window.addEventListener('resize', () => {
+            scrollToIndex(currentIndex);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(intervalId);
+            } else if (!isUserInteracting) {
+                intervalId = startAutoScroll();
+            }
         });
     </script>
 </body>
