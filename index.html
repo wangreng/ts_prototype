@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World Vertical Scroll</title>
+    <title>Hello World Infinite Scroll</title>
     <style>
         * {
             margin: 0;
@@ -83,26 +83,76 @@
 
     <script>
         const slidesContainer = document.getElementById('slides');
-        const slideCount = slidesContainer.children.length;
-        let currentIndex = 0;
+        const originalSlideCount = 3;
         let isUserInteracting = false;
+        let currentIndex = 1; // Start at the first real slide (after the clone)
         const scrollDuration = 3200;
+        let intervalId;
 
-        function scrollToIndex(index) {
+        // Clone slides for infinite effect: add one clone at the beginning and one at the end
+        const firstSlide = slidesContainer.children[0].cloneNode(true);
+        const lastSlide = slidesContainer.children[originalSlideCount - 1].cloneNode(true);
+        
+        slidesContainer.appendChild(firstSlide);
+        slidesContainer.insertBefore(lastSlide, slidesContainer.children[0]);
+
+        const totalSlides = slidesContainer.children.length;
+
+        function scrollToIndex(index, smooth = true) {
             const top = index * window.innerHeight;
-            slidesContainer.scrollTo({ top, behavior: 'smooth' });
+            slidesContainer.scrollTo({ 
+                top, 
+                behavior: smooth ? 'smooth' : 'auto' 
+            });
+        }
+
+        function handleInfiniteScroll() {
+            const scrollTop = slidesContainer.scrollTop;
+            const slideHeight = window.innerHeight;
+            const currentScrollIndex = Math.round(scrollTop / slideHeight);
+
+            // If we're at the cloned first slide (at the end), jump to the real first slide
+            if (currentScrollIndex >= totalSlides - 1) {
+                currentIndex = 1;
+                setTimeout(() => {
+                    scrollToIndex(currentIndex, false);
+                }, 50);
+            }
+            // If we're at the cloned last slide (at the beginning), jump to the real last slide
+            else if (currentScrollIndex <= 0) {
+                currentIndex = totalSlides - 2;
+                setTimeout(() => {
+                    scrollToIndex(currentIndex, false);
+                }, 50);
+            } else {
+                currentIndex = currentScrollIndex;
+            }
         }
 
         function startAutoScroll() {
             return setInterval(() => {
                 if (isUserInteracting) return;
-                currentIndex = (currentIndex + 1) % slideCount;
+                currentIndex++;
                 scrollToIndex(currentIndex);
             }, scrollDuration);
         }
 
-        let intervalId = startAutoScroll();
+        // Initialize position
+        scrollToIndex(currentIndex, false);
 
+        // Start auto-scroll
+        intervalId = startAutoScroll();
+
+        // Handle scroll end to check for infinite loop
+        let scrollTimeout;
+        slidesContainer.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                handleInfiniteScroll();
+            }, 150);
+        });
+
+        // User interaction handlers
         ['mousedown', 'touchstart', 'wheel'].forEach(eventName => {
             slidesContainer.addEventListener(eventName, () => {
                 isUserInteracting = true;
@@ -112,15 +162,19 @@
 
         ['mouseup', 'touchend'].forEach(eventName => {
             slidesContainer.addEventListener(eventName, () => {
-                isUserInteracting = false;
-                intervalId = startAutoScroll();
+                setTimeout(() => {
+                    isUserInteracting = false;
+                    intervalId = startAutoScroll();
+                }, 500);
             });
         });
 
+        // Handle window resize
         window.addEventListener('resize', () => {
-            scrollToIndex(currentIndex);
+            scrollToIndex(currentIndex, false);
         });
 
+        // Handle visibility change
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 clearInterval(intervalId);
@@ -131,3 +185,4 @@
     </script>
 </body>
 </html>
+
