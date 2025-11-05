@@ -316,6 +316,7 @@
         <header>
             <h1><span>THE WIRE</span>开场语录闪卡</h1>
             <p>翻阅《火线》每一集开场出现的经典语录。向左滑动暂存，向右滑动收藏；也可以使用键盘方向键或下方按钮。每张卡片都配有发言者在剧中的剧照，沉浸式回味台词背后的情境。</p>
+            <p style="margin-top: 12px; font-size: 14px; opacity: 0.7;">💡 提示：你可以在代码的 <code>quotes</code> 数组中添加更多语录。参考现有格式，从粉丝维基或其他来源收集你喜欢的开场引语。</p>
             <div class="progress">
                 <span class="progress-count">1 / 10</span>
                 <div class="progress-line"><span></span></div>
@@ -336,6 +337,12 @@
     </main>
 
     <script>
+        // 添加更多语录的方法：
+        // 1. 访问 The Wire Wiki 或其他粉丝资源找到剧集开场引语
+        // 2. 按照下面的格式添加到这个数组中
+        // 3. 格式：{ episode: '剧集编号 · 标题', speaker: '角色名', quote: '引语', image: '图片URL' }
+        // 4. 你可以在 Unsplash 或其他图片网站找到合适的背景图
+
         const quotes = [
             {
                 episode: 'S01E01 · The Target',
