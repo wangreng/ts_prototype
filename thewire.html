@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wire Quote Flashcards</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --card-width: min(90vw, 420px);
+            --card-height: min(80vh, 640px);
+            --shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top, #1e2a3a 0%, #0a0d16 45%, #05070c 100%);
+            color: #f5f7fb;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            padding: clamp(16px, 3vh, 40px);
+        }
+
+        main {
+            width: 100%;
+            max-width: 1080px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: clamp(24px, 3vw, 48px);
+            align-items: center;
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding: clamp(16px, 2vw, 32px);
+        }
+
+        h1 {
+            font-size: clamp(32px, 4vw, 48px);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        h1 span {
+            display: block;
+            color: #8bb4ff;
+            font-size: clamp(14px, 2vw, 18px);
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: clamp(16px, 2vw, 18px);
+            line-height: 1.6;
+            max-width: 500px;
+            color: rgba(233, 239, 255, 0.82);
+        }
+
+        .progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .progress-line {
+            position: relative;
+            flex: 1;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(139, 180, 255, 0.16);
+            overflow: hidden;
+        }
+
+        .progress-line span {
+            position: absolute;
+            inset: 0;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, #7b90ff 0%, #3fa8ff 100%);
+            transition: width 0.35s ease;
+        }
+
+        .card-stage {
+            position: relative;
+            width: var(--card-width);
+            height: var(--card-height);
+            margin: 0 auto;
+        }
+
+        .card-deck {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .card {
+            position: absolute;
+            inset: 0;
+            padding: 28px;
+            border-radius: 28px;
+            background-image: linear-gradient(180deg, rgba(8, 12, 21, 0.25) 0%, rgba(8, 12, 21, 0.75) 70%), var(--bg-image, linear-gradient(135deg, #1f2435, #111726));
+            background-size: cover;
+            background-position: center;
+            backdrop-filter: blur(1px);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 24px;
+            transform-origin: 50% 85%;
+            transform: translateY(calc(var(--offset, 0) * 12px)) scale(calc(1 - var(--offset, 0) * 0.05));
+            transition: transform 0.35s ease, opacity 0.35s ease;
+            cursor: grab;
+            will-change: transform;
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+        }
+
+        .card.dragging {
+            transition: none;
+            cursor: grabbing;
+        }
+
+        .card.stacked {
+            pointer-events: none;
+            filter: saturate(0.6) brightness(0.8);
+        }
+
+        .card-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1;
+        }
+
+        .episode {
+            font-size: 12px;
+            letter-spacing: 0.32em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .speaker {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        blockquote {
+            z-index: 1;
+            font-size: clamp(20px, 3.6vw, 28px);
+            line-height: 1.4;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            color: #f8faff;
+        }
+
+        blockquote::before {
+            content: '"';
+            font-size: 3.2rem;
+            line-height: 1;
+            color: rgba(255, 255, 255, 0.4);
+            position: relative;
+            top: -16px;
+            left: -6px;
+        }
+
+        blockquote::after {
+            content: '"';
+        }
+
+        .card-footer {
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .control-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(16, 24, 38, 0.68);
+            color: #fff;
+            font-size: 22px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+            transition: transform 0.2s ease, background 0.2s ease;
+            backdrop-filter: blur(6px);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            background: rgba(34, 48, 75, 0.9);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn[data-action="like"] {
+            background: linear-gradient(135deg, rgba(94, 222, 161, 0.85), rgba(34, 197, 94, 0.85));
+            color: #062b16;
+        }
+
+        .control-btn[data-action="like"]:hover {
+            background: linear-gradient(135deg, rgba(94, 222, 161, 1), rgba(34, 197, 94, 1));
+        }
+
+        .control-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .completion {
+            position: absolute;
+            inset: 0;
+            border-radius: 28px;
+            background: rgba(9, 13, 23, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            text-align: center;
+            padding: 24px;
+            color: rgba(222, 230, 255, 0.92);
+        }
+
+        .completion.active {
+            display: flex;
+            animation: fadeIn 0.45s ease both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        @media (max-width: 920px) {
+            body {
+                padding: 24px 16px 32px;
+            }
+
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                text-align: center;
+                align-items: center;
+            }
+
+            header p {
+                max-width: unset;
+            }
+        }
+
+        @media (max-width: 520px) {
+            :root {
+                --card-width: min(94vw, 360px);
+                --card-height: min(78vh, 560px);
+            }
+
+            .card {
+                padding: 24px;
+                border-radius: 24px;
+            }
+
+            blockquote {
+                font-size: clamp(20px, 6vw, 24px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1><span>THE WIRE</span>开场语录闪卡</h1>
+            <p>翻阅《火线》每一集开场出现的经典语录。向左滑动暂存，向右滑动收藏；也可以使用键盘方向键或下方按钮。每张卡片都配有发言者在剧中的剧照，沉浸式回味台词背后的情境。</p>
+            <div class="progress">
+                <span class="progress-count">1 / 10</span>
+                <div class="progress-line"><span></span></div>
+            </div>
+        </header>
+        <section class="card-stage">
+            <div class="card-deck" aria-live="polite"></div>
+            <div class="completion" role="status">
+                <h2>全部语录浏览完毕 ✅</h2>
+                <p>向上滑回或刷新页面即可重新开始，再次回味《火线》的街头智慧。</p>
+                <button class="control-btn" data-action="restart" type="button">重来</button>
+            </div>
+            <div class="controls" aria-label="闪卡操作">
+                <button class="control-btn" data-action="skip" type="button" aria-label="左滑跳过">⟲</button>
+                <button class="control-btn" data-action="like" type="button" aria-label="右滑收藏">❤</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const quotes = [
+            {
+                episode: 'S01E01 · The Target',
+                speaker: 'Jimmy McNulty',
+                quote: "When it's not your turn.",
+                image: 'https://static.wikia.nocookie.net/thewire/images/d/d3/Jimmy_McNulty.jpg'
+            },
+            {
+                episode: 'S01E02 · The Detail',
+                speaker: 'Omar Little',
+                quote: 'You come at the king, you best not miss.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/0/02/OmarLittleS1.jpg'
+            },
+            {
+                episode: 'S01E03 · The Buys',
+                speaker: "D'Angelo Barksdale",
+                quote: 'The king stay the king.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/e/e8/D%27Angelo_Barksdale.jpg'
+            },
+            {
+                episode: 'S01E04 · Old Cases',
+                speaker: 'Bubbles',
+                quote: "Thin line 'tween heaven and here.",
+                image: 'https://static.wikia.nocookie.net/thewire/images/7/7e/Bubbles_Season_1.jpg'
+            },
+            {
+                episode: 'S01E07 · One Arrest',
+                speaker: 'Bunk Moreland',
+                quote: 'A man must have a code.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/4/46/BunkMorelandSeason1.jpg'
+            },
+            {
+                episode: 'S01E08 · Lessons',
+                speaker: 'Lester Freamon',
+                quote: 'All the pieces matter.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/7/7c/LesterFreamonSeason1.jpg'
+            },
+            {
+                episode: 'S02E06 · All Prologue',
+                speaker: 'Omar Little',
+                quote: 'A lie ain't a side of the story. It's just a lie.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/5/5a/OmarLittleS2Court.jpg'
+            },
+            {
+                episode: 'S03E01 · Time After Time',
+                speaker: 'Colvin',
+                quote: 'This is what you get for giving a fuck when it ain't your turn to give a fuck.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/0/0e/Howard_Colvin.jpg'
+            },
+            {
+                episode: 'S03E11 · Middle Ground',
+                speaker: 'Stringer Bell',
+                quote: 'We ain't gotta dream no more, man.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/f/fe/StringerBellSeason3.jpg'
+            },
+            {
+                episode: 'S05E10 · -30-',
+                speaker: 'Donut',
+                quote: 'Whatever it is, it gotta be better than a lie.',
+                image: 'https://static.wikia.nocookie.net/thewire/images/c/c8/Donut_The_Wire.jpg'
+            }
+        ];
+
+        const deck = document.querySelector('.card-deck');
+        const progressCount = document.querySelector('.progress-count');
+        const progressBar = document.querySelector('.progress-line span');
+        const controls = document.querySelector('.controls');
+        const completionOverlay = document.querySelector('.completion');
+        const restartBtn = completionOverlay.querySelector('[data-action="restart"]');
+        const skipBtn = document.querySelector('[data-action="skip"]');
+        const likeBtn = document.querySelector('[data-action="like"]');
+
+        let currentIndex = 0;
+
+        function updateProgress() {
+            const total = quotes.length;
+            const viewed = Math.min(currentIndex + 1, total);
+            progressCount.textContent = `${viewed} / ${total}`;
+            const progress = total === 0 ? 0 : ((currentIndex) / total) * 100;
+            progressBar.style.width = `${Math.min(progress, 100)}%`;
+        }
+
+        function createCard(data, offset) {
+            const card = document.createElement('article');
+            card.className = 'card';
+            card.style.setProperty('--offset', offset);
+            card.style.setProperty('--bg-image', `url("${data.image}")`);
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="episode">${data.episode}</span>
+                    <span class="speaker">${data.speaker}</span>
+                </div>
+                <blockquote>${data.quote}</blockquote>
+                <div class="card-footer">
+                    <span>左滑</span>
+                    <span>右滑</span>
+                </div>
+            `;
+
+            if (offset > 0) {
+                card.classList.add('stacked');
+            } else {
+                attachCardInteractions(card);
+                card.classList.add('active');
+            }
+
+            return card;
+        }
+
+        function attachCardInteractions(card) {
+            let startX = 0;
+            let currentX = 0;
+            let dragging = false;
+            let pointerId = null;
+
+            const onPointerDown = (event) => {
+                pointerId = event.pointerId;
+                startX = event.clientX || (event.touches && event.touches[0].clientX) || 0;
+                dragging = true;
+                currentX = 0;
+                card.style.transition = 'none';
+                card.classList.add('dragging');
+                card.setPointerCapture(pointerId);
+            };
+
+            const onPointerMove = (event) => {
+                if (!dragging) return;
+                const clientX = event.clientX || (event.touches && event.touches[0].clientX) || 0;
+                currentX = clientX - startX;
+                const rotation = currentX / 14;
+                const translateY = Math.min(Math.abs(currentX) * 0.12, 48);
+                card.style.transform = `translate(${currentX}px, ${translateY}px) rotate(${rotation}deg)`;
+            };
+
+            const onPointerUp = () => {
+                if (!dragging) return;
+                dragging = false;
+                card.releasePointerCapture(pointerId);
+                card.classList.remove('dragging');
+
+                const threshold = card.offsetWidth * 0.35;
+                if (Math.abs(currentX) > threshold) {
+                    const direction = currentX > 0 ? 1 : -1;
+                    swipeCard(card, direction);
+                } else {
+                    card.style.transition = 'transform 0.3s ease';
+                    card.style.transform = '';
+                    card.addEventListener('transitionend', () => {
+                        card.style.transition = '';
+                    }, { once: true });
+                }
+            };
+
+            card.addEventListener('pointerdown', onPointerDown);
+            card.addEventListener('pointermove', onPointerMove);
+            card.addEventListener('pointerup', onPointerUp);
+            card.addEventListener('pointercancel', onPointerUp);
+        }
+
+        function swipeCard(card, direction) {
+            card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+            card.style.transform = `translate(${direction * (window.innerWidth * 0.9)}px, -40px) rotate(${direction * 32}deg)`;
+            card.style.opacity = '0';
+            card.classList.remove('active');
+            card.addEventListener('transitionend', () => {
+                card.remove();
+                advanceDeck();
+            }, { once: true });
+        }
+
+        function advanceDeck() {
+            currentIndex += 1;
+            if (currentIndex >= quotes.length) {
+                showCompletion();
+                return;
+            }
+            populateDeck();
+        }
+
+        function populateDeck() {
+            deck.innerHTML = '';
+            updateProgress();
+            const remaining = quotes.length - currentIndex;
+            const cardsToRender = Math.min(3, remaining);
+
+            for (let offset = 0; offset < cardsToRender; offset++) {
+                const data = quotes[currentIndex + offset];
+                const card = createCard(data, offset);
+                deck.appendChild(card);
+            }
+
+            if (remaining <= 0) {
+                controls.style.display = 'none';
+            } else {
+                controls.style.display = 'flex';
+                skipBtn.disabled = false;
+                likeBtn.disabled = false;
+            }
+        }
+
+        function showCompletion() {
+            deck.innerHTML = '';
+            controls.style.display = 'none';
+            completionOverlay.classList.add('active');
+            progressCount.textContent = `${quotes.length} / ${quotes.length}`;
+            progressBar.style.width = '100%';
+        }
+
+        function getActiveCard() {
+            return deck.querySelector('.card.active');
+        }
+
+        function manualSwipe(direction) {
+            const card = getActiveCard();
+            if (!card) return;
+            swipeCard(card, direction);
+        }
+
+        skipBtn.addEventListener('click', () => manualSwipe(-1));
+        likeBtn.addEventListener('click', () => manualSwipe(1));
+        restartBtn.addEventListener('click', () => {
+            completionOverlay.classList.remove('active');
+            currentIndex = 0;
+            populateDeck();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                manualSwipe(-1);
+            }
+            if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                manualSwipe(1);
+            }
+        });
+
+        populateDeck();
+    </script>
+</body>
+</html>
